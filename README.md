@@ -289,8 +289,10 @@ training/webvoyager/scope_sft.yaml
 
 ## Acknowledgments
 
-THUDM/VisualAgentBench
+We thank the authors and contributors of the following open-source projects:
 
-WebShop is based on hpl and verl-agent.
-
-The WebVoyager training set is based on WebVoyager and OpenWebVoyager.
+- [THUDM/VisualAgentBench](https://github.com/THUDM/VisualAgentBench)
+- [WebShop](https://github.com/princeton-nlp/WebShop)
+- [verl-agent](https://github.com/langfengQ/verl-agent)
+- [WebVoyager](https://github.com/MinorJerry/WebVoyager)
+- [OpenWebVoyager](https://github.com/MinorJerry/OpenWebVoyager)
