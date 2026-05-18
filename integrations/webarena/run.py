@@ -66,29 +66,22 @@ file_handler.setFormatter(formatter)
 
 def text_wrap(text, font, max_width):
     lines = []
-    paragraphs = text.split('\n')  # 按照 \n 分割文本为段落
+    paragraphs = text.split('\n')
     for paragraph in paragraphs:
         words = paragraph.split(' ')
         line = ''
         for word in words:
-            # 临时行
             test_line = f"{line} {word}".strip()
-            # 获取临时行的宽度
             test_line_bbox = font.getbbox(test_line)
             test_line_width = test_line_bbox[2] - test_line_bbox[0]
             if test_line_width <= max_width:
-                # 如果临时行的宽度不超过图片宽度，继续添加单词
                 line = test_line
             else:
-                # 如果超过了最大宽度，保存当前行，开始新的一行
                 lines.append(line)
                 line = word
-        # 添加每段的最后一行
         if line:
             lines.append(line)
-        # 每个段落后添加一个空行，以保留段落的换行
         lines.append('')
-    # 移除最后一个空行（不需要额外的空行）
     if lines[-1] == '':
         lines.pop()
     return lines

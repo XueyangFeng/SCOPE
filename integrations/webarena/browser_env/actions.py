@@ -1905,26 +1905,21 @@ def create_webrl_id_based_action(action_str: str) -> Action:
     """Main function to return individual webrl id based action"""
     import ast
     def remove_comments(code):
-        # 按行分割代码
         for key in ['exit(', 'do(', 'go_backward(', 'go_forward(']:
             if key in code:
                 return key + code.split(key)[-1]
         lines = code.split('\n')
         for i, line in enumerate(lines):
             if line.strip().startswith('#'):
-                # 跳过注释行
                 continue
             else:
-                # 返回非注释行及其后面的部分
                 return '\n'.join(lines[i:])
         return ''
 
     def parse_function_call(expression):
         expression = remove_comments(expression)
-        # 将字符串解析为 AST
         expression = expression.strip() 
         tree = ast.parse(expression, mode='eval')
-        # 提取函数名称
         func_call = tree.body
         if not isinstance(func_call, ast.Call):
             return {
@@ -1934,7 +1929,6 @@ def create_webrl_id_based_action(action_str: str) -> Action:
         result = {
             "operation": func_name,
         }
-        # 提取参数
         args = func_call.args
         kwargs = func_call.keywords
         if args:
@@ -1954,7 +1948,6 @@ def create_webrl_id_based_action(action_str: str) -> Action:
                     result["kwargs"] = {}
                 if kw.arg == "element":
                     try:
-                        # 解析元素的内部函数
                         inner_func = kw.value
                         if isinstance(inner_func, ast.Call) and inner_func.func.id == 'find_element_by_instruction':
                             for inner_kw in inner_func.keywords:

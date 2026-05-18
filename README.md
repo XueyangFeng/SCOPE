@@ -1,23 +1,23 @@
 # From Local Skills to Long-Horizon Web Tasks: Progressive Skill Exploration for LLM Web Agents
 
-本仓库是论文 From Local Skills to Long-Horizon Web Tasks: Progressive Skill Exploration for LLM Web Agents 的官方实现。
+This repository is the official implementation of the paper From Local Skills to Long-Horizon Web Tasks: Progressive Skill Exploration for LLM Web Agents.
 
-使用简单探索策略训练 Web 智能体仍然很有挑战：成功轨迹很少，而稀疏的最终奖励使智能体很难从失败尝试中提取有用反馈。
+Training web agents with simple exploration strategies remains challenging: successful trajectories are rare, and sparse final rewards make it difficult for agents to extract useful feedback from failed attempts.
 
-受技能习得理论启发，我们提出 Skill Composition Progressive Exploration (SCOPE)，这是一个面向长时域 Web 智能体的“由短到长”学习框架。SCOPE 将复杂任务探索分解为一个渐进扩展过程：从局部技能逐步扩展到完整任务解决能力。具体来说，SCOPE 通过三个步骤迭代探索局部技能：技能发现 从历史部署中提取可复用的局部技能和失败经验；技能编排 将发现的技能组合成高级技能链；技能扩展 使用与当前技能链一致的失败经验，引导智能体探索新的子技能。通过这一过程，SCOPE 在多次部署中逐步构建完成任务的技能链，并通过策略内化将其内化到智能体策略中。
+Inspired by skill acquisition theory, we propose Skill Composition Progressive Exploration (SCOPE), a short-to-long learning framework for long-horizon web agents. SCOPE decomposes complex task exploration into a progressive expansion process, growing from local skills toward complete task-solving ability. Specifically, SCOPE iteratively explores local skills through three steps: Skill Discovery extracts reusable local skills and failed experiences from historical deployments; Skill Orchestration composes discovered skills into higher-level skill chains; Skill Expansion uses failed experiences aligned with the current skill chain to guide the agent toward new sub-skills. Through this process, SCOPE gradually builds task-solving skill chains across multiple deployments and internalizes them into the agent policy through policy internalization.
 
-Scope 将 benchmark runner 和方法代码分开。本仓库包含 Scope pipeline、prompt、数据集 adapter，以及用于连接上游环境的小型 runner overlay/integration。本仓库不包含完整 benchmark 部署、模型权重、原始数据集或实验日志。
+Scope separates benchmark runners from method code. This repository contains the Scope pipeline, prompts, dataset adapters, and lightweight runner overlays/integrations for connecting to upstream environments. It does not include full benchmark deployments, model weights, raw datasets, or experiment logs.
 
-## 1. 环境安装
+## 1. Environment Setup
 
-创建 conda 环境并安装 Scope：
+Create a conda environment and install Scope:
 
 ```bash
 git clone <scope-repo-url>
 cd scope
 ```
 
-我们强烈建议您为不同的数据集安装不同的环境：
+We strongly recommend using a separate environment for each dataset.
 
 webarena
 
@@ -125,9 +125,9 @@ scope/
           guided_prompt.txt
 ```
 
-## 2. 配置环境变量
+## 2. Configure Environment Variables
 
-创建 `.env` 文件：
+Create a `.env` file:
 
 ```bash
 # common
@@ -149,23 +149,23 @@ WEBVOYAGER_ROOT=integrations/WebVoyager
 WEBVOYAGER_TASK_FILE=integrations/WebVoyager/data/WebVoyager_trainset.jsonl
 ```
 
-## 3. 运行 Scope
+## 3. Running Scope
 
 ### Automatic Multi-Round Rollout
 
-运行自动多轮 Scope rollout：
+Run automatic multi-round Scope rollout:
 
 ```bash
 PYTHONPATH=src python -m scope.<dataset>.run_sequence
 ```
 
-指定 sequence config：
+Specify a sequence config:
 
 ```bash
 PYTHONPATH=src python -m scope.<dataset>.run_sequence --config <sequence-config-path>
 ```
 
-默认 sequence config：
+Default sequence configs:
 
 ```text
 src/scope/webarena/configs/sequence.yaml
@@ -175,25 +175,25 @@ src/scope/webvoyager/configs/sequence.yaml
 
 ### Manual Step-by-Step Rollout Pipeline
 
-Scope 目前支持手动运行单轮 rollout pipeline。每一轮对应 SCOPE 的三个核心步骤和一次环境部署：
+Scope currently supports manually running a single-round rollout pipeline. Each round corresponds to the three core SCOPE steps and one environment deployment:
 
 ```text
 Skill Discovery -> Skill Orchestration -> Skill Expansion -> Environment Rollout
 ```
 
-在代码中，对应的 stage 名称为：
+The corresponding stage names in code are:
 
 ```text
 refresh_memory -> select -> update -> rollout
 ```
 
-运行完整单轮：
+Run a full single round:
 
 ```bash
 PYTHONPATH=src python -m scope.<dataset>.run_round --stage all
 ```
 
-`<dataset>` 可选：
+`<dataset>` can be:
 
 ```text
 webarena
@@ -201,7 +201,7 @@ webshop
 webvoyager
 ```
 
-也可以逐阶段运行：
+You can also run each stage separately:
 
 ```bash
 # Skill Discovery
@@ -217,7 +217,7 @@ PYTHONPATH=src python -m scope.<dataset>.run_round --stage update
 PYTHONPATH=src python -m scope.<dataset>.run_round --stage rollout
 ```
 
-指定 config：
+Specify a config:
 
 ```bash
 PYTHONPATH=src python -m scope.<dataset>.run_round --config <config-path> --stage all
@@ -226,11 +226,11 @@ PYTHONPATH=src python -m scope.<dataset>.run_round --config <config-path> --stag
 **Parameters**:
 
 ```text
---stage      运行阶段：Skill Discovery / Skill Orchestration / Skill Expansion / Environment Rollout
---config     pipeline config 路径；不指定时使用对应数据集的默认 config
+--stage      Running stage: Skill Discovery / Skill Orchestration / Skill Expansion / Environment Rollout
+--config     Pipeline config path; if omitted, the default config for the selected dataset is used
 ```
 
-默认 config：
+Default configs:
 
 ```text
 src/scope/webarena/configs/pipeline.yaml
@@ -240,19 +240,19 @@ src/scope/webvoyager/configs/pipeline.yaml
 
 ### Policy Internalization Data
 
-从多轮 rollout 结果中提取用于 policy internalization 的训练数据：
+Extract training data for policy internalization from multi-round rollout results:
 
 ```bash
 PYTHONPATH=src python -m scope.<dataset>.export_train_data
 ```
 
-指定导出 config：
+Specify an export config:
 
 ```bash
 PYTHONPATH=src python -m scope.<dataset>.export_train_data --config <export-config-path>
 ```
 
-默认导出 config：
+Default export configs:
 
 ```text
 src/scope/webarena/configs/export_train_data.yaml
@@ -260,7 +260,7 @@ src/scope/webshop/configs/export_train_data.yaml
 src/scope/webvoyager/configs/export_train_data.yaml
 ```
 
-默认输出：
+Default output:
 
 ```text
 artifacts/<dataset>/train_data/scope_rollout_sft.json
@@ -268,7 +268,7 @@ artifacts/<dataset>/train_data/scope_rollout_sft.json
 
 ### Policy Internalization Training
 
-使用 LLaMA-Factory 训练 policy：
+Train the policy with LLaMA-Factory:
 
 ```bash
 export LLAMA_FACTORY_ROOT=/path/to/LLaMA-Factory
@@ -279,7 +279,7 @@ export SCOPE_OUTPUT_DIR=/path/to/output-policy
 bash scripts/train_policy.sh training/<dataset>/scope_sft.yaml
 ```
 
-训练配置：
+Training configs:
 
 ```text
 training/webarena/scope_sft.yaml
@@ -291,6 +291,6 @@ training/webvoyager/scope_sft.yaml
 
 THUDM/VisualAgentBench
 
-WebShop 来自hpl和verl-agent
+WebShop is based on hpl and verl-agent.
 
-webvoyager训练集来自 webvoyager和openwebvoyager
+The WebVoyager training set is based on WebVoyager and OpenWebVoyager.

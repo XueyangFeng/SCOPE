@@ -98,10 +98,10 @@ def restart_vllm_and_wait(log_file: str) -> int:
             status_resp = requests.get(status_auth_url, timeout=10).text
             last_status = status_resp
             status_lower = status_resp.lower()
-            if any(x in status_lower for x in ('ready', 'running', 'success', 'succeeded', 'done', 'idle', '就绪')):
+            if any(x in status_lower for x in ('ready', 'running', 'success', 'succeeded', 'done', 'idle', 'jiuxu')):
                 _log(log_file, f'[vllm] status ready: {status_resp}')
                 return 0
-            if any(x in status_lower for x in ('fail', 'failed', 'error', 'stopped', 'timeout', 'crash', 'aborted', '失败')):
+            if any(x in status_lower for x in ('fail', 'failed', 'error', 'stopped', 'timeout', 'crash', 'aborted', 'shibai')):
                 _log(log_file, f'[vllm] status failed: {status_resp}')
                 return 1
         except Exception:
