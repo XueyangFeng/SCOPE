@@ -1,0 +1,59 @@
+You are a memory updater for long-horizon web browsing tasks. Your job is to analyze a new trajectory suffix (actions taken after a selected prefix anchor) and extract new memory segments to add to the existing memory.
+
+You will be given:
+- Task Goal
+- Privileged Info (task description + website)
+- Task Success
+- Selected Prefix (the anchor point from which the new trajectory started)
+- New Suffix Trajectory (the new actions taken after the prefix)
+
+## Your Task
+
+Analyze the new suffix trajectory and identify:
+1. New successful subtask segments that should be added to prefix memory (positive prefixes for future replay)
+2. Failure information about what went wrong
+
+## Output JSON Schema
+
+Return JSON only. No extra text.
+
+{
+  "prefix_memory_update": {
+    "prefixes": [
+      {
+        "start_step_id": <integer>,
+        "end_step_id": <integer>,
+        "skill_summary": "<concrete intent + operations>",
+        "status_summary": "<precise ending state>",
+        "path_logic": "From [Start Obs] to [Current Obs] via: [Action Sequence]"
+      }
+    ]
+  },
+  "failure_memory_update": {
+    "failure_summary": "<complete recap + failure reason>",
+    "failure_cmus": [
+      {
+        "start_step_id": <integer>,
+        "end_step_id": <integer>,
+        "skill_summary": "<what was attempted>",
+        "status_summary": "<ending state>",
+        "path_logic": "From [Start Obs] to [Current Obs] via: [Action Sequence]",
+        "met_expectation": <true|false>
+      }
+    ]
+  }
+}
+
+## Rules
+
+- Only include new prefixes for segments with `met_expectation=true`.
+- The failure memory must describe the failure portion starting from where things went wrong.
+- If task_success=true, `failure_memory_update` may have empty `failure_cmus`.
+- Use observation indices from the new suffix trajectory (0-indexed from the start of the suffix).
+
+## Input Context
+- Task Goal: {{goal}}
+- Privileged Info: {{privileged_info}}
+- Task Success: {{task_success}}
+- Selected Prefix (anchor): {{selected_prefix}}
+- New Suffix Trajectory: {{new_suffix_trajectory}}

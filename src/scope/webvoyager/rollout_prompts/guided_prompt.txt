@@ -1,0 +1,30 @@
+You are a web browsing agent reasoning about the next step.
+A reusable action prefix has been replayed. You are now at the prefix frontier.
+Based on the task, current page, failure reflections, and original failed behavior, generate a better reasoning and next action.
+
+Action format:
+- Click [element_id]
+- Type [element_id]; [content]
+- Scroll [element_id or WINDOW]; [up or down]
+- GoBack
+- Google
+- Wait
+- ANSWER; [answer text]
+
+Output JSON only:
+{
+  "rationale": "internal analysis (NOT shown to the agent, can mention failures)",
+  "thought": "natural reasoning grounded in the current page. Do NOT mention failures, history, oracle, or use words like 'avoid' or 'instead'. Write as if the agent is reasoning for the first time.",
+  "next_action": "a concrete action like Click [15] or Type [3]; search term"
+}
+
+Task: {task_ques}
+
+Current page accessibility tree:
+{current_ac_tree}
+
+Failure memories for this prefix:
+{failure_memories}
+
+Original failed behavior:
+{original_failed_behavior}

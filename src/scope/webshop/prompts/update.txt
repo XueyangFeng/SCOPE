@@ -1,0 +1,151 @@
+You are a memory updater for WebShop trajectories.
+
+Your job is to analyze a new suffix trajectory and organize it into update results for two downstream memories:
+
+1. prefix memory
+2. failure memory
+
+Note:
+- Before entering this module, the known prefix part has already been cut away from the trajectory.
+- You only need to analyze the new suffix.
+- Do not repeat summaries of the known prefix.
+
+You will be given:
+
+- Task Goal
+- Privileged Info (oracle-level target product and constraints)
+- Task Success
+- Selected Prefix
+- New Suffix Trajectory
+
+## Downstream Use
+
+Your output will be used to update two memories:
+
+- The maximal prefix of consecutive `met_expectation=true` CMUs starting from the beginning of the new suffix will be appended to prefix memory.
+- The remaining suffix starting from the first `met_expectation=false` CMU will be appended to failure memory.
+
+Therefore, the boundary between the last `true` CMU and the first `false` CMU must be semantically meaningful.
+
+## met_expectation Rules
+
+Set `met_expectation` as follows:
+
+- Set to `true` when the segment makes reusable progress after the selected prefix and remains compatible with buying the correct target product.
+- Set to `false` when the segment follows an incorrect branch, selects a wrong product, misses a required attribute or option, violates the price constraint, loops without progress, or marks the earliest point where the new suffix stops being a reliable reusable prefix.
+- If `task_success=false`, the final CMU must be `false`.
+
+## Required Output JSON Schema
+
+Return JSON only. Do not include Markdown or any extra text.
+
+{
+  "prefix_memory_update": {
+    "prefixes": [
+      {
+        "start_step_id": <integer>,
+        "end_step_id": <integer>,
+        "skill_summary": "<string>",
+        "status_summary": "<string>",
+        "path_logic": "<string>",
+        "met_expectation": true
+      }
+    ]
+  },
+  "failure_memory_update": {
+    "failure_cmus": [
+      {
+        "start_step_id": <integer>,
+        "end_step_id": <integer>,
+        "skill_summary": "<string>",
+        "status_summary": "<string>",
+        "path_logic": "<string>",
+        "met_expectation": <true|false>
+      }
+    ],
+    "failure_summary": "<string>"
+  }
+}
+
+## Hard Constraints
+
+- `prefix_memory_update.prefixes` may only contain the maximal prefix of consecutive `met_expectation=true` segments starting from the beginning of the new suffix.
+- If the new suffix becomes incorrect immediately at its first real step, `prefix_memory_update.prefixes` should be an empty list.
+- Once the first `met_expectation=false` CMU appears, all later segments must go into `failure_memory_update.failure_cmus`.
+- All CMUs must be time-ordered, non-overlapping, and cover the full new suffix trajectory.
+- `status_summary` must describe the ending observation after the segment finishes, not the starting observation.
+- Use the privileged info to distinguish:
+  - search failure vs later product-selection failure,
+  - correct product but wrong options,
+  - correct product/options but price violation.
+- `failure_summary` must include:
+  - a chronological recap of the new suffix,
+  - the global path logic from the first suffix observation to the final observation,
+  - one explicit failure reason.
+
+## Example
+
+Example input:
+
+- Task Goal: i'm looking for a organic tea tree oil. also, choose vanilla flavored one, and price lower than 40.00 dollars
+- Privileged Info: {"asin": "B07Q434SD2", "attributes": ["tea tree"], "goal_options": ["vanilla"], "price_upper": 40.0}
+- Task Success: false
+- Selected Prefix:
+  {
+    "prefix_id": "p0",
+    "skill_summary": "Search for a product using the key goal constraints vanilla, tea tree, and price under 40 dollars.",
+    "status_summary": "Reached a results page where the ground-truth product appears among the candidates.",
+    "path_logic": "From [Start Obs] to [Current Obs] via: search[vanilla organic tea tree oil]",
+    "prefix_actions": [],
+    "actions": [{"action": "search[vanilla organic tea tree oil]"}],
+    "end_obs": "Search results page with the ground-truth product present."
+  }
+- New Suffix Trajectory:
+  [0] OBSERVATION:
+  Search results page. The ground-truth product B07Q434SD2 appears in the results list.
+
+  [0] ACTION:
+  Thought: There are several options, but the Sanatio Skin Care Lip Balm comes in vanilla flavor and is well below my budget at $4.29. This seems like a good match for my needs. I'll check this one out first.
+  Action: click[b01dyrmy2]
+
+  [1] OBSERVATION:
+  Still on the same search results page.
+
+  [1] ACTION:
+  Thought: The Sanatio Skin Care Lip Balm has the vanilla flavor and it's within my budget. It doesn't directly say it's organic tea tree oil, but the scent is similar to products I trust, and it's a lip balm which might contain some tea tree oil. Since it fits the other criteria and I haven't found a better option, I'll proceed with this one.
+  Action: click[buy now]
+
+  [2] OBSERVATION:
+  Still on the same search results page.
+
+  [2] ACTION:
+  Thought: After reviewing all my options, the Sanatio Skin Care Lip Balm stands out because it's affordable, has the vanilla flavor, and although it's not explicitly organic tea tree oil, it aligns with my initial product needs. I've decided to purchase this item.
+  Action: click[buy now]
+
+Example output:
+{
+  "prefix_memory_update": {
+    "prefixes": []
+  },
+  "failure_memory_update": {
+    "failure_cmus": [
+      {
+        "start_step_id": 0,
+        "end_step_id": 2,
+        "skill_summary": "Choose a candidate product and try to complete the purchase from the results page.",
+        "status_summary": "Stayed on the unchanged results page while committing to an incorrect product hypothesis and repeating invalid or unproductive actions.",
+        "path_logic": "From [Start Obs] to [Current Obs] via: click[b01dyrmy2] -> click[buy now] -> click[buy now]",
+        "met_expectation": false
+      }
+    ],
+    "failure_summary": "In the new suffix, the agent started from a results page where the privileged target product was already present, but immediately selected an irrelevant vanilla lip balm result and then repeated invalid purchase attempts without changing the page state; the global path logic is From [Obs 0] to [Obs 3] via: click[b01dyrmy2] -> click[buy now] -> click[buy now]; the failure reason is that the suffix became incorrect at its first step by committing to a non-target product instead of opening the privileged target ASIN that was already available in the results."
+  }
+}
+
+## Input Context
+
+- Task Goal: {{goal}}
+- Privileged Info: {{privileged_info}}
+- Task Success: {{task_success}}
+- Selected Prefix: {{selected_prefix}}
+- New Suffix Trajectory: {{new_suffix_trajectory}}

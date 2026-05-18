@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Generated artifacts should stay outside the public repo by default.
+artifacts/
+outputs/
+runs/
+logs/
+memory_store/
+
+# Third-party runner outputs and local state.
+integrations/**/__pycache__/
+integrations/**/*.pyc
+integrations/**/.pytest_cache/
+integrations/**/.cache/
+integrations/**/.auth/
+integrations/**/logs/
+integrations/**/outputs/
+integrations/**/results/
+integrations/**/runs/
+integrations/**/saves/
+integrations/**/downloads/
+integrations/**/wandb/
+integrations/**/llm_raw_logs/

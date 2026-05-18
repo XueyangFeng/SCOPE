@@ -1,0 +1,7 @@
+dataset: webvoyager
+output: ./artifacts/webvoyager/train_data/scope_rollout_sft.json
+runs:
+  - label: iter0_run0
+    path: ./artifacts/webvoyager/iter0/rollout/run0/results
+  - label: iter1_run0
+    path: ./artifacts/webvoyager/iter1/rollout/run0/results

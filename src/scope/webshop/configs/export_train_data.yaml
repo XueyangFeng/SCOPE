@@ -1,0 +1,7 @@
+dataset: webshop
+output: ./artifacts/webshop/train_data/scope_rollout_sft.json
+runs:
+  - label: iter0_run0
+    path: ./artifacts/webshop/iter0/run0
+  - label: iter1_run0
+    path: ./artifacts/webshop/iter1/run0

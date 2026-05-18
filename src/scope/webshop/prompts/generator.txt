@@ -1,0 +1,153 @@
+You are a memory extractor for WebShop trajectories.
+
+Your job is to analyze one WebShop rollout and decompose it into time-ordered segments. Each segment should represent either:
+- reusable progress toward the purchase goal, or
+- the earliest incorrect branch / failure region.
+
+You will be given:
+
+- Task Goal
+- Privileged Info (oracle-level target product and constraints)
+- Task Success
+- Final Reward
+- Current Trajectory
+
+## met_expectation rules
+
+- Set `met_expectation=true` when the segment makes reusable progress toward finding and buying the right product.
+- Set `met_expectation=false` when the segment enters a wrong branch, confirms an incorrect product, loops uselessly, or fails to finish correctly.
+- If `task_success=false`, the final CMU must be `false`.
+
+## Required output
+
+Return JSON only.
+
+{
+  "failure_summary": "<complete trajectory recap + global path logic + one explicit failure reason>",
+  "cmus": [
+    {
+      "start_step_id": <integer>,
+      "end_step_id": <integer>,
+      "skill_summary": "<what this segment tried to accomplish>",
+      "status_summary": "<what state was reached after this segment>",
+      "path_logic": "<short action-level transition summary>",
+      "met_expectation": <true|false>
+    }
+  ]
+}
+
+## Constraints
+
+- `cmus` must be time-ordered and non-overlapping.
+- Cover the whole trajectory from the first real step to the last real step.
+- The first CMU is a special root no-op segment with `start_step_id=-1` and `end_step_id=-1`.
+- Use inclusive step spans.
+- Except for the required root CMU (`-1,-1`), all other `start_step_id` / `end_step_id` must refer to real action indices only.
+- `failure_summary` should include all three parts in one field:
+  - complete chronological trajectory recap,
+  - global path logic from the first observation to the final observation,
+  - one explicit failure reason grounded in the privileged info.
+- `status_summary` should describe the ending state after the segment finishes, corresponding to the post-action observation at `obs[end_step_id + 1]`.
+- The first `met_expectation=false` segment marks where the trajectory stops being a reusable prefix.
+- WebShop-specific failure reasons usually involve:
+  - poor search query choice,
+  - selecting a partially matching product,
+  - missing a required attribute or option,
+  - buying the wrong product,
+  - looping without making progress.
+- Use the privileged info to distinguish:
+  - search failure vs later decision failure,
+  - correct product but wrong options,
+  - correct product/options but price violation.
+
+## Example
+
+Example input:
+- Task Goal: i'm looking for a organic tea tree oil. also, choose vanilla flavored one, and price lower than 40.00 dollars
+- Privileged Info: {"asin": "B07Q434SD2", "attributes": ["tea tree"], "goal_options": ["vanilla"], "price_upper": 40.0}
+- Task Success: false
+- Final Reward: 0.0
+- Current Trajectory:
+[0] OBSERVATION:
+Instruction page for organic tea tree oil with vanilla flavor under 40 dollars.
+
+[0] ACTION:
+Thought: I need to find organic tea tree oil that has a vanilla flavor and is priced under $40.00, so I'll start by searching for those specific criteria.
+Action: search[vanilla organic tea tree oil]
+
+[1] OBSERVATION:
+Search results page. The ground-truth product B07Q434SD2 appears in the results list.
+
+[1] ACTION:
+Thought: There are several options, but the Sanatio Skin Care Lip Balm comes in vanilla flavor and is well below my budget at $4.29. This seems like a good match for my needs. I'll check this one out first.
+Action: click[b01dyrmy2]
+
+[2] OBSERVATION:
+Still on the same search results page.
+
+[2] ACTION:
+Thought: The Sanatio Skin Care Lip Balm has the vanilla flavor and it's within my budget. It doesn't directly say it's organic tea tree oil, but the scent is similar to products I trust, and it's a lip balm which might contain some tea tree oil. Since it fits the other criteria and I haven't found a better option, I'll proceed with this one.
+Action: click[buy now]
+
+[3] OBSERVATION:
+Still on the same search results page.
+
+[3] ACTION:
+Thought: After reviewing all my options, the Sanatio Skin Care Lip Balm stands out because it's affordable, has the vanilla flavor, and although it's not explicitly organic tea tree oil, it aligns with my initial product needs. I've decided to purchase this item.
+Action: click[buy now]
+
+[4] OBSERVATION:
+Still on the same search results page.
+
+[4] ACTION:
+Thought: I've made my decision, and I'm ready to buy the Sanatio Skin Care Lip Balm. It's important to note that while this item does not meet all my criteria perfectly, it was the closest match in my search, and I'm proceeding with the purchase.
+Action: click[buy now]
+
+[5] OBSERVATION:
+Still on the same search results page.
+
+[5] ACTION:
+Thought: Despite not being the organic tea tree oil I wanted, the Sanatio Skin Care Lip Balm was the best choice given my constraints and preferences.
+Action: click[learn more]
+
+Example output:
+{
+  "failure_summary": "The agent started from the instruction page, issued a useful search query, reached a results page where the ground-truth product B07Q434SD2 was present, but then focused on an irrelevant vanilla lip balm result, repeatedly attempted invalid follow-up actions on the unchanged results page, and never navigated to the correct product; global path logic is From [Obs 0] to [Obs 6] via: search[vanilla organic tea tree oil] -> click[b01dyrmy2] -> click[buy now] -> click[buy now] -> click[buy now] -> click[learn more]; the run failed because the search stage succeeded but the later decision stage selected and persisted on a non-target product instead of opening the privileged target ASIN that already appeared in the results.",
+  "cmus": [
+    {
+      "start_step_id": -1,
+      "end_step_id": -1,
+      "skill_summary": "N/A",
+      "status_summary": "The initial observation presents the shopping task and starting page before any real action is taken.",
+      "path_logic": "N/A",
+      "met_expectation": true
+    },
+    {
+      "start_step_id": 0,
+      "end_step_id": 0,
+      "skill_summary": "Search for a product using the key goal constraints vanilla, tea tree, and price under 40 dollars.",
+      "status_summary": "Reached a results page where the ground-truth product appears among the candidates.",
+      "path_logic": "From [Start Obs] to [Current Obs] via: search[vanilla organic tea tree oil]",
+      "met_expectation": true
+    },
+    {
+      "start_step_id": 1,
+      "end_step_id": 5,
+      "skill_summary": "Choose a candidate product and try to complete the purchase from the results page.",
+      "status_summary": "Stayed on the unchanged results page while committing to an incorrect product hypothesis and repeating invalid or unproductive actions.",
+      "path_logic": "From [Start Obs] to [Current Obs] via: click[b01dyrmy2] -> click[buy now] -> click[buy now] -> click[buy now] -> click[learn more]",
+      "met_expectation": false
+    }
+  ]
+}
+
+Use the same schema and segmentation style for the real trajectory.
+
+## Input context
+
+- Task Goal: {{goal}}
+- Privileged Info: {{privileged_info}}
+- Task Success: {{task_success}}
+- Final Reward: {{reward}}
+- Current Trajectory:
+{{trajectory_data}}

@@ -1,0 +1,38 @@
+# Scope WebArena rollout wrapper for Qwen-style WebRL action formatting.
+# Apply integrations/webarena/ to VAB-WebArena-Lite before using this config.
+
+profile: webrl_qwen
+run_script: run_with_prefix.py
+result_dir: ${SCOPE_WEBARENA_RESULT_DIR:-./artifacts/webarena/rollouts/webrl_qwen}
+model_path: ${DCRL_MODEL_PATH}
+prefix_root: ${SCOPE_PREFIX_ROOT}
+test_config_base_dir: ${WEBARENA_TEST_CONFIG_BASE_DIR:-config_files/wa/train_webarena_new}
+
+dataset: webarena
+provider: ${WEBARENA_PROVIDER:-openai}
+mode: completion
+temperature: 0.0
+top_p: 0.9
+max_tokens: 2048
+
+parallelism: 10
+chunk_size: 0
+task_timeout_seconds: 900
+task_timeout_kill_after_seconds: 30
+conda_env_name: ${WEBARENA_CONDA_ENV:-scope-webarena}
+
+only_selected_node_tasks: 1
+prefix_validate_replay: 1
+prefix_validate_on_fail: restart
+prefix_reference_dir: ""
+prefix_id_repair_enable: 1
+prefix_id_repair_model: ${SCOPE_ID_REPAIR_MODEL:-deepseek-v3.2}
+
+guided_think_mode: auto
+guided_think_apply_mode: replay
+guided_think_model: ${SCOPE_GUIDED_THINK_MODEL:-deepseek-v3.2}
+guided_think_timeout: 8
+
+prestart_web_reset: 1
+prestart_vllm_restart: 1
+vllm_restart_base_url: ${VLLM_RESTART_BASE_URL:-http://localhost:18075}

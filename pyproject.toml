@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scope-agent"
+version = "0.1.0"
+description = "Reference implementation for a multi-dataset memory-guided web-agent pipeline."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "fengxueyang" }
+]
+dependencies = [
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+scope-run-round = "scope.cli.run_round:main"
+scope-run-sequence = "scope.cli.run_sequence:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"scope.webarena" = ["README.md", "configs/*.yaml", "prompts/*.txt", "rollout_prompts/*.txt"]
+"scope.webshop" = ["README.md", "configs/*.yaml", "prompts/*.txt", "rollout_prompts/*.txt"]
+"scope.webvoyager" = ["README.md", "configs/*.yaml", "prompts/*.txt", "rollout_prompts/*.txt"]

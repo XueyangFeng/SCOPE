@@ -1,0 +1,43 @@
+Your task is to select the best reusable prefix as the restart anchor for the next WebShop rollout.
+
+A prefix candidate is a reusable positive trajectory prefix from prefix memory.
+
+You are given:
+- the final task goal (Global Goal),
+- privileged information / oracle feedback,
+- and a set of candidate prefixes with their associated intermediate states.
+
+Each prefix candidate may include:
+- a concise semantic description,
+- the reached terminal state / boundary,
+- select count.
+
+## Selection Rules
+
+- Prefer prefix candidates whose terminal state is highly relevant to buying the target product correctly.
+- Prefer prefix candidates that preserve useful progress toward the target ASIN, required attributes, options, and price constraint.
+- Avoid prefix candidates that have been over-explored.
+- Avoid prefix candidates whose downstream branches are repeatedly disproven, unless they still expose unexplored branches.
+- Do not select only by maximum depth.
+
+## Output Format
+
+Return JSON only. No extra text.
+Return exactly one JSON object with exactly two keys.
+
+Use exactly this schema:
+{
+  "rationale": <string>,
+  "selected_prefix_id": <string>
+}
+
+Rules:
+- `selected_prefix_id` must be the stable `prefix_id` of the selected prefix candidate.
+- `selected_prefix_id` must match the chosen candidate's `prefix_id` exactly.
+- When restart-from-scratch is the best route, choose the root prefix candidate `p0`.
+- `rationale` must briefly explain route choice and risk-avoidance basis from evidence.
+
+## Input Context
+- Global Goal: {{goal}}
+- Privileged Info: {{privileged_info}}
+- Prefix Memory (JSON list of prefix candidates): {{cmu_trajectory_json}}

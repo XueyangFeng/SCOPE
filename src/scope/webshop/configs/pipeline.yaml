@@ -1,0 +1,35 @@
+dataset: webshop
+iter: 0
+run: 0
+artifact_root: ./artifacts/webshop
+memory_root: ./artifacts/webshop/memory_store
+source_trace_dir: ./artifacts/webshop/iter0/run0
+rollout_output_dir: ./artifacts/webshop/iter1/run0
+success_threshold: 1.0
+task_split: train
+prompts:
+  generator: src/scope/webshop/prompts/generator.txt
+  update: src/scope/webshop/prompts/update.txt
+  selector: src/scope/webshop/prompts/selector.txt
+llm:
+  enabled: false
+  model: gpt-4o-mini
+  base_url: https://api.openai.com/v1
+rollout:
+  hpl_root: ${HPL_ROOT:-integrations/webshop_hpl}
+  guided_prompt_source: src/scope/webshop/rollout_prompts/guided_prompt.txt
+  icl_path: prompt/icl_examples/webshop_icl.json
+  icl_format: conversation
+  icl_num: 1
+  use_icl: false
+  exp_path: ./configs/task
+  exp_config: webshop_full
+  split: train
+  agent_path: ./configs/model
+  agent_config: openai
+  model_name: gpt-4o-mini
+  api_base: https://api.openai.com/v1
+  api_key: ${DCRL_API_KEY}
+  incorporation_type: replay
+  workers: 8
+  override: true

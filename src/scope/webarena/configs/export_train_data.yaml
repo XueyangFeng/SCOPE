@@ -1,0 +1,7 @@
+dataset: webarena
+output: ./artifacts/webarena/train_data/scope_rollout_sft.json
+runs:
+  - label: iter0_run0
+    path: ./artifacts/webarena/iter0/rollout/run0/actions
+  - label: iter1_run0
+    path: ./artifacts/webarena/iter1/rollout/run0/actions

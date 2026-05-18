@@ -1,0 +1,146 @@
+You are a memory extractor for long-horizon environment interaction tasks. Your job is to analyze one failed trajectory and decompose it into multiple subtask completion segments. Each subtask may consist of multiple atomic actions.
+
+You will be given the following information:
+
+- Task Goal
+
+- Privileged Info (Oracle-level correctness criteria)
+
+- Task Success (trajectory-level result)
+
+- Existing Memory (M_history) (for reference)
+
+- Current Trajectory (tau)
+
+## met_expectation Rules
+
+Set `met_expectation` as follows:
+
+- Set to `true` when the segment achieves intermediate progress.
+- Set to `false` when the segment follows an incorrect branch or reaches an incorrect conclusion.
+- If task_success=false, the final CMU must be `false` and must include the failure-causing final submission action at the last real action index.
+
+## Privileged-Mismatch Diagnosis (Required)
+
+Privileged info defines the verifiable final correctness criterion.
+
+Use this criterion to infer why the trajectory did not satisfy the task requirement.
+
+## Required Output JSON Schema
+
+Return JSON only. Do not include Markdown or any extra text.
+
+{
+
+"failure_summary": "<complete trajectory recap + global path logic + one-sentence failure reason>",
+
+"cmus": [
+
+{
+
+"start_step_id": <integer>,
+
+"end_step_id": <integer>,
+
+"skill_summary": "<concrete intent + operations with specific objects/values>",
+
+"status_summary": "<precise ending-state information: key control IDs, current input values, rendered facts>",
+
+"path_logic": "From [Start Obs] to [Current Obs] via: [Action Sequence]",
+
+"met_expectation": <true|false>
+
+}
+]
+
+}
+
+## Hard Constraints
+
+- `failure_summary` must include all three parts in one field: (1) complete chronological trajectory recap, (2) global path logic from the first observation to the final observation, (3) one explicit one-sentence failure reason.
+
+- When final failure is answer-related, `failure_summary` must include a concise explanation grounded in the privileged criterion.
+
+- `cmus` must be time-ordered, non-overlapping, and cover the full trajectory from first observation to terminal/final observation.
+- The first CMU is a special no-op subtask with `start_step_id=-1` and `end_step_id=-1`.
+
+- Keep `start_step_id` and `end_step_id` as integer observation indices.
+- `start_step_id` / `end_step_id` use inclusive span semantics: a CMU covers observations and actions with indices in `[start_step_id, end_step_id]`.
+- Example: if `start_step_id=0` and `end_step_id=1`, the CMU must include step-0 and step-1 actions/observations, not just step-0.
+- Except for the required first root CMU (`-1,-1`), all other `start_step_id` / `end_step_id` must refer to real action-observation indices only. Do not use the synthetic terminal observation index as a CMU boundary.
+- For failed runs, the final failure CMU must include the final answer-submission action itself (e.g., `exit/submit`) and therefore should end at the last real action index (e.g., `7->7`), not `7->8` or `8->8`.
+- `status_summary` must describe the post-action ending observation at `obs[end_step_id + 1]` (the same observation used as `ending_observation` in downstream processing), not `obs[end_step_id]`.
+
+- Operations that cause failure or do not produce the expected page/state change must be segmented into their own failure CMU (`met_expectation=false`). In particular, final answer submission actions that cause failure (e.g., `exit`, submit, confirm) must not be grouped into a `met_expectation=true` CMU.
+
+- Do not output any fields beyond `failure_summary`, `cmus`, and the six CMU fields.
+
+## Standard Example
+Input (simplified):
+- Task Goal: "List the top-1 best-selling product in 2022."
+- Privileged Info:
+  {
+    "intent": "List the top-1 best-selling product in 2022.",
+    "eval": {
+      "eval_types": ["string_match"],
+      "reference_answers": {
+        "exact_match": "Quest Lumaflex™ Band"
+      }
+    }
+  }
+- Task Success: false
+- Trajectory: open report page -> set date filters -> submit report -> read a row -> exit with wrong final answer.
+
+Output:
+{
+  "failure_summary": "The agent navigated from the dashboard to the Bestsellers report page, configured year-2022 filters, submitted the report query, observed rendered results, and then finalized with an exit answer; global path logic is From [Obs 0] to [Obs 7] via: Click(element=\"7\") -> Click(element=\"27\") -> Type(element=\"22\", argument=\"01/01/2022\") -> Type(element=\"25\", argument=\"12/31/2022\") -> Select Dropdown Option(element=\"20\", argument=\"Year\") -> Click(element=\"16\") -> Scroll Down -> exit(message=\"...\"); the run failed because the final submission used a sentence-form answer, while the privileged criterion expects an exact target string output format.",
+  "cmus": [
+    {
+      "start_step_id": -1,
+      "end_step_id": -1,
+      "skill_summary": "N/A",
+      "status_summary": "Observation 0 shows that the Magento Admin Panel's 'Dashboard' (ID: 118, 81) has been loaded, featuring key modules such as the 'Reports' (ID: 7) menu in the sidebar and the 'Bestsellers' (ID: 19) tab in the data area. While the current list displays 'Quest Lumaflex™ Band' with a quantity of 6, this dashboard view lacks a date range filtering function for the Bestsellers data.",
+      "path_logic": "N/A",
+      "met_expectation": true
+    },
+    {
+      "start_step_id": 0,
+      "end_step_id": 1,
+      "skill_summary": "Navigate from dashboard to the Bestsellers report page by opening Reports and selecting the Bestsellers entry.",
+      "status_summary": "Ending observation shows the Bestsellers report form with key controls visible: Period select (ID:20), From input (ID:22), To input (ID:25), and Show Report button (ID:16).",
+      "path_logic": "From [Start Obs] to [Current Obs] via: Click(element=\"7\") -> Click(element=\"27\")",
+      "met_expectation": true
+    },
+    {
+      "start_step_id": 2,
+      "end_step_id": 5,
+      "skill_summary": "Configure report filters using From='01/01/2022', To='12/31/2022', set Period='Year', then submit the report query.",
+      "status_summary": "Ending observation shows report results rendered with applied filter values in controls and a populated table section.",
+      "path_logic": "From [Start Obs] to [Current Obs] via: Type(element=\"22\", argument=\"01/01/2022\") -> Type(element=\"25\", argument=\"12/31/2022\") -> Select Dropdown Option(element=\"20\", argument=\"Year\") -> Click(element=\"16\")",
+      "met_expectation": true
+    },
+    {
+      "start_step_id": 6,
+      "end_step_id": 6,
+      "skill_summary": "Scroll the page to reveal the generated report results and view table rows (visual inspection of top entries).",
+      "status_summary": "Ending observation (obs 7) shows the rendered Bestsellers report table with rows for 2022; top row product = \"Quest Lumaflex\u2122 Band\" (price $19.00, order quantity 5) and aggregated total order quantity shown as 20, plus additional product rows beneath.",
+      "path_logic": "From [Start Obs] to [Current Obs] via: do(action=\"Scroll Down\")",
+      "met_expectation": true,
+    },
+    {
+      "start_step_id": 7,
+      "end_step_id": 7,
+      "skill_summary": "Finalize by submitting the answer via exit with the sentence: \"The top-1 best-selling product in 2022 is the Quest Lumaflex\u2122 Band\".",
+      "status_summary": "Ending observation (obs 8, terminal) records the final exit submission containing the sentence-form answer and shows the run completed with task_success=false under privileged evaluation (final output not accepted by exact-match criterion).",
+      "path_logic": "From [Start Obs] to [Current Obs] via: exit(message=\"The top-1 best-selling product in 2022 is the Quest Lumaflex\u2122 Band\")",
+      "met_expectation": false,
+    }
+  ]
+}
+
+## Input Context
+- Task Goal: {{goal}}
+- Privileged Info: {{privileged_info}}
+- Task Success (trajectory-level, privileged): {{task_success}}
+- Existing Memory (M_history): {{m_history}}
+- Current Trajectory (tau): {{trajectory_data}}

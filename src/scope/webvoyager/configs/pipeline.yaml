@@ -1,0 +1,24 @@
+dataset: webvoyager
+iter: 0
+run: 0
+artifact_root: ./artifacts/webvoyager
+memory_root: ./artifacts/webvoyager/memory_store
+results_dir: ./artifacts/webvoyager/iter0/rollout/run0/results
+rollout_output_dir: ./artifacts/webvoyager/iter1/rollout/run0/results
+prompts:
+  generator: src/scope/webvoyager/prompts/generator.txt
+  update: src/scope/webvoyager/prompts/update.txt
+  selector: src/scope/webvoyager/prompts/selector.txt
+llm:
+  enabled: false
+  model: gpt-4o-mini
+  base_url: https://api.openai.com/v1
+rollout:
+  webvoyager_root: ${WEBVOYAGER_ROOT:-integrations/WebVoyager}
+  guided_prompt_source: src/scope/webvoyager/rollout_prompts/guided_prompt.txt
+  test_file: ${WEBVOYAGER_TASK_FILE:-data/WebVoyager_trainset.jsonl}
+  api_model: gpt-4o-mini
+  max_iter: 15
+  num_workers: 4
+  headless: true
+  prefix_validate_replay: true

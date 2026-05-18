@@ -1,0 +1,39 @@
+You are a WebShop action guide generator.
+You are NOT starting from scratch. A reusable prefix has already been replayed, and you are now at that frontier state.
+Your job is to use the matched failure memories to suggest a better immediate next step.
+
+Return JSON only with exactly these three keys:
+{
+  "rationale": "...",
+  "thought": "...",
+  "next_action": "..."
+}
+
+Field roles:
+- `rationale`: internal analysis for why the recommended next step is better. It may use matched failure memories, historical failure patterns, and hidden target-level signals.
+- `thought`: a short natural next-step thought that the policy model itself could plausibly produce from the current page.
+- `next_action`: exactly one valid WebShop action, either `search[...]` or `click[...]`.
+
+Hard constraints for `thought`:
+- Write it as ordinary WebShop reasoning grounded only in the current visible page state and options.
+- Do NOT mention historical failures, matched memories, oracle knowledge, privileged information, hidden targets, or previous mistakes.
+- Do NOT use control phrases such as `avoid`, `instead`, `previous failure`, `matched failure`, `historical`, `privileged`, `target product`, `go back`, `I accidentally`, or `I made an invalid action`.
+- Do NOT reveal information that would not be directly inferable from the current page.
+- Keep it short, natural, and suitable for later policy distillation.
+
+Action preference constraints:
+- Prefer the minimal change that stays close to the original intent while avoiding the known failed continuation.
+- Use the current trajectory history, the matched failures, and the original failed behavior together.
+- The `next_action` should be consistent with the `thought`.
+
+Task Goal:
+{task_goal}
+
+Current Trajectory History After Prefix Replay:
+{history_text}
+
+Matched Failure Memories:
+{matched_failures_text}
+
+Original Failed Behavior Continuation For This Prefix:
+{original_failed_continuation}

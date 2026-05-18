@@ -1,0 +1,47 @@
+pipeline:
+  dataset: webshop
+  artifact_root: ./artifacts/webshop
+  memory_root: ./artifacts/webshop/memory_store
+  results_dir_template: ./artifacts/webshop/iter{source_iter}/run{source_run}
+  source_trace_dir_template: ./artifacts/webshop/iter{source_iter}/run{source_run}
+  rollout_output_dir_template: ./artifacts/webshop/iter{iter}/run{run}
+  success_threshold: 1.0
+  task_split: train
+  prompts:
+    generator: src/scope/webshop/prompts/generator.txt
+    update: src/scope/webshop/prompts/update.txt
+    selector: src/scope/webshop/prompts/selector.txt
+  llm:
+    enabled: false
+    model: gpt-4o-mini
+    base_url: https://api.openai.com/v1
+  rollout:
+    hpl_root: ${HPL_ROOT:-integrations/webshop_hpl}
+    guided_prompt_source: src/scope/webshop/rollout_prompts/guided_prompt.txt
+    icl_path: prompt/icl_examples/webshop_icl.json
+    icl_format: conversation
+    icl_num: 1
+    use_icl: false
+    exp_path: ./configs/task
+    exp_config: webshop_full
+    split: train
+    agent_path: ./configs/model
+    agent_config: openai
+    model_name: ${DCRL_MODEL}
+    api_base: ${DCRL_BASE_URL}
+    api_key: ${DCRL_API_KEY}
+    incorporation_type: replay
+    workers: 8
+    override: true
+
+rounds:
+  - iter: 0
+    run: 0
+    source_iter: 0
+    source_run: 0
+    stage: rollout
+  - iter: 1
+    run: 0
+    source_iter: 0
+    source_run: 0
+    stage: all

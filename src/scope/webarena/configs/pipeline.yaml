@@ -1,0 +1,23 @@
+dataset: webarena
+iter: 0
+run: 0
+artifact_root: ./artifacts/webarena
+memory_root: ./artifacts/webarena/memory_store
+actions_dir: ./artifacts/webarena/iter0/rollout/run0/actions
+traces_dir: ./artifacts/webarena/iter0/rollout/run0/traces
+rollout_output_dir: ./artifacts/webarena/iter0/rollout/run1/actions
+success_threshold: 0.5
+prompts:
+  generator: src/scope/webarena/prompts/generator.txt
+  update: src/scope/webarena/prompts/update.txt
+  selector: src/scope/webarena/prompts/selector.txt
+llm:
+  enabled: false
+  model: gpt-4o-mini
+  base_url: https://api.openai.com/v1
+rollout:
+  vab_root: ${VAB_WEBARENA_ROOT}
+  script: wa_parallel_run_yi.sh
+  wrapper_config: ${SCOPE_WEBARENA_WRAPPER_CONFIG:-src/scope/webarena/configs/webrl_llama_wrapper.yaml}
+  guided_prompt_source: src/scope/webarena/rollout_prompts/guided_prompt.txt
+  run_in_background: "0"
